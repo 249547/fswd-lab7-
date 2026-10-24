@@ -1,0 +1,37 @@
+### Works with the VS Code "REST Client" extension (or copy into Postman)
+@base = http://localhost:3000
+
+GET {{base}}/products
+
+###
+GET {{base}}/products?categoryId=1&sort=price_desc
+
+###
+POST {{base}}/customers
+Content-Type: application/json
+
+{ "name": "Razi", "email": "razi@example.com", "address": "Islamabad" }
+
+###
+POST {{base}}/customers/1/cart
+Content-Type: application/json
+
+{ "productId": 2, "quantity": 2 }
+
+###
+GET {{base}}/customers/1/cart
+
+###
+POST {{base}}/orders
+Content-Type: application/json
+
+{ "customerId": 1 }
+
+###
+PATCH {{base}}/orders/1/status
+Content-Type: application/json
+
+{ "status": "paid" }
+
+###
+DELETE {{base}}/orders/1

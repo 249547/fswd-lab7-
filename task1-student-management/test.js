@@ -1,0 +1,40 @@
+// Quick self-test: node test.js
+const assert = require('assert');
+const app = require('./server');
+const server = app.listen(0, async () => {
+  const base = `http://localhost:${server.address().port}`;
+  const call = async (method, path, body) => {
+    const r = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    return { status: r.status, body: await r.json() };
+  };
+  let r;
+  r = await call('POST', '/students', { name: 'Ali', rollNo: '249001', email: 'ali@x.com', department: 'CS', semester: 4 });
+  assert.equal(r.status, 201); const sid = r.body.id;
+  r = await call('POST', '/students', { name: 'Dup', rollNo: '249001', email: 'd@x.com', department: 'CS', semester: 4 });
+  assert.equal(r.status, 400);
+  r = await call('POST', '/students', { name: 'Bad' }); assert.equal(r.status, 400);
+  r = await call('PUT', `/students/${sid}`, { name: 'Ali Khan', rollNo: '249001', email: 'ali@x.com', department: 'CS', semester: 5 });
+  assert.equal(r.body.semester, 5);
+  r = await call('PATCH', `/students/${sid}`, { department: 'SE' }); assert.equal(r.body.department, 'SE');
+  r = await call('POST', '/teachers', { name: 'Mam Warda', email: 'w@x.com', department: 'CS', subject: 'OS' }); assert.equal(r.status, 201);
+  const tid = r.body.id;
+  r = await call('GET', '/teachers'); assert.equal(r.body.count, 1);
+  r = await call('POST', '/attendance', { studentId: sid, subject: 'OS', date: '2026-10-20', status: 'present' }); assert.equal(r.status, 201);
+  r = await call('POST', '/attendance', { studentId: sid, subject: 'OS', date: '2026-10-20', status: 'absent' }); assert.equal(r.status, 400);
+  r = await call('POST', '/attendance', { studentId: 99, subject: 'OS', date: '2026-10-20', status: 'present' }); assert.equal(r.status, 400);
+  r = await call('POST', '/attendance', { studentId: sid, subject: 'OS', date: '2026-10-21', status: 'absent' });
+  r = await call('POST', '/marks', { studentId: sid, subject: 'OS', examType: 'mid', obtained: 24, total: 30 }); assert.equal(r.status, 201);
+  const mid = r.body.id;
+  r = await call('POST', '/marks', { studentId: sid, subject: 'OS', examType: 'quiz', obtained: 12, total: 10 }); assert.equal(r.status, 400);
+  r = await call('GET', `/marks?studentId=${sid}&subject=os`); assert.equal(r.body.count, 1);
+  r = await call('PUT', `/marks/${mid}`, { studentId: sid, subject: 'OS', examType: 'mid', obtained: 27, total: 30 }); assert.equal(r.body.obtained, 27);
+  r = await call('GET', `/students/${sid}/report`);
+  assert.equal(r.body.attendance.percentage, 50); assert.equal(r.body.marks.percentage, 90);
+  r = await call('DELETE', `/teachers/${tid}`); assert.equal(r.status, 200);
+  r = await call('GET', `/teachers/${tid}`); assert.equal(r.status, 404);
+  r = await call('DELETE', `/students/${sid}`); assert.equal(r.status, 200);
+  r = await call('GET', '/marks'); assert.equal(r.body.count, 0);
+  r = await call('GET', '/attendance'); assert.equal(r.body.count, 0);
+  console.log('All Task 1 tests passed');
+  server.close();
+});
